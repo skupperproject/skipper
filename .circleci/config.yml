@@ -1,0 +1,34 @@
+version: 2.1
+orbs:
+    docker: circleci/docker@1.0.1
+
+parameters:
+  ci_gilligan_image:
+    default: quay.io/nicob87/gilligan:latest
+    type: string
+
+workflows:
+  version: 2.1
+  build-workflow:
+    jobs:
+      - build-and-push-image:
+          filters:
+            branches:
+              only:
+                - master
+                - nb-building-console-image
+
+jobs:
+  build-and-push-image:
+    machine: true
+    steps:
+      - checkout
+      - docker/install-docker
+      - run: docker login quay.io -u ${DOCKER_LOGIN} -p ${DOCKER_PASSWORD}
+      - run:
+          name: Build and push image
+          command: |
+            echo 'export GILLIGAN_IMAGE=<< pipeline.parameters.ci_gilligan_image >>' >> $BASH_ENV
+            source $BASH_ENV
+            docker build -t ${GILLIGAN_IMAGE} -f Dockerfile .
+            docker push ${GILLIGAN_IMAGE}
